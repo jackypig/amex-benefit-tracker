@@ -1,4 +1,4 @@
-import { firebaseConfig, ALLOWED_EMAIL } from "./firebase-config.js";
+import { firebaseConfig } from "./firebase-config.js";
 
 /* ==========================================================================
    Benefit catalogue — American Express Gold Card (personal), 2026
@@ -118,7 +118,10 @@ async function loadYear(year) {
     },
     (err) => {
       console.error("Firestore read failed:", err);
-      alert(`Could not read your data from Firestore:\n\n${err.message}\n\nCheck that firestore.rules is deployed and that your UID matches.`);
+      const hint = err.code === "permission-denied"
+        ? "Firestore rejected this account. Publish firestore.rules with your own UID in the Firebase console."
+        : err.message;
+      alert(`Could not read your data from Firestore:\n\n${hint}`);
     }
   );
 }
@@ -362,6 +365,32 @@ function el(tag, props = {}) {
 }
 
 /* ==========================================================================
+   Device owner — cosmetic first-run claim.
+   The authoritative check is the UID condition in firestore.rules; this only
+   avoids showing a stranger an empty tracker on a shared browser.
+   ========================================================================== */
+
+const OWNER_KEY = "amex-benefits:owner";
+const getOwner = () => localStorage.getItem(OWNER_KEY);
+const setOwner = (email) => localStorage.setItem(OWNER_KEY, email);
+
+/** Resolves true if this account may proceed on this device. */
+function confirmOwner(email) {
+  return new Promise((resolve) => {
+    $("claimEmail").textContent = email;
+    $("claim").hidden = false;
+    $("signInBtn").hidden = true;
+    const done = (ok) => {
+      $("claim").hidden = true;
+      $("signInBtn").hidden = false;
+      resolve(ok);
+    };
+    $("claimYes").onclick = () => { setOwner(email); done(true); };
+    $("claimNo").onclick = () => done(false);
+  });
+}
+
+/* ==========================================================================
    Boot
    ========================================================================== */
 
@@ -424,10 +453,15 @@ if (!HAS_FIREBASE) {
       $("gate").hidden = false;
       return;
     }
-    if (ALLOWED_EMAIL && user.email !== ALLOWED_EMAIL) {
+    const owner = getOwner();
+    if (owner && user.email !== owner) {
       await authMod.signOut(auth);
       $("gateMsg").className = "gate-msg";
-      $("gateMsg").textContent = `${user.email} is not allowed to use this tracker.`;
+      $("gateMsg").textContent = `This tracker belongs to ${owner}. Signed ${user.email} out.`;
+      return;
+    }
+    if (!owner && !(await confirmOwner(user.email))) {
+      await authMod.signOut(auth);
       return;
     }
     store.uid = user.uid;

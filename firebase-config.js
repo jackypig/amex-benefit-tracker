@@ -14,13 +14,14 @@
 // ---------------------------------------------------------------------------
 
 export const firebaseConfig = {
-  apiKey: "",
-  authDomain: "",
-  projectId: "",
-  appId: "",
+  apiKey: "AIzaSyArUYk6FGiANpzT0nhCYDd8qO4w_n2Mxos",
+  authDomain: "amex-benefit-tracker-a8c41.firebaseapp.com",
+  projectId: "amex-benefit-tracker-a8c41",
+  storageBucket: "amex-benefit-tracker-a8c41.firebasestorage.app",
+  messagingSenderId: "332419102314",
+  appId: "1:332419102314:web:228fb31540ca32037c7c13"
 };
 
-// Only this Google account may use the app. Fill in your own email address.
-// Leave empty to allow any Google account (each account still gets its own
-// private data). The real enforcement lives in firestore.rules.
-export const ALLOWED_EMAIL = "";
+// No account is hardcoded here on purpose -- this file is public once the repo
+// is. The first account to sign in claims the tracker on this device, and the
+// real, server-side lock is the UID check in firestore.rules.

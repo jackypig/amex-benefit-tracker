@@ -35,10 +35,13 @@ mode and saves to `localStorage` in that browser.
 3. **Build → Firestore Database → Create database** → *Production mode*.
 4. **Project settings → General → Your apps → Web app** (`</>`), register the app,
    and copy the `firebaseConfig` values into `firebase-config.js`.
-5. Set `ALLOWED_EMAIL` in `firebase-config.js` to your own Google address.
-6. Sign in once, then find your UID under **Authentication → Users**.
-7. Paste that UID into `firestore.rules` in place of `PASTE_YOUR_UID_HERE`, then
+5. Sign in once, then find your UID under **Authentication → Users**.
+6. Paste that UID into `firestore.rules` in place of `PASTE_YOUR_UID_HERE`, then
    copy the file's contents into **Firestore Database → Rules → Publish**.
+
+No account is hardcoded in the source. The first Google account to sign in
+claims the tracker in that browser; the authoritative lock is the UID check in
+`firestore.rules`.
 
 The values in `firebase-config.js` are not secrets — Firebase web config is public
 by design, and it is safe to commit. Your data is protected by `firestore.rules`,

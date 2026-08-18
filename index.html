@@ -15,6 +15,15 @@
     <h1>Amex Gold Benefit Tracker</h1>
     <p class="gate-sub">Track your monthly dining, Uber Cash, Dunkin' and Resy credits before they expire.</p>
     <button id="signInBtn" class="btn btn-primary">Sign in with Google</button>
+
+    <div id="claim" class="claim" hidden>
+      <p class="claim-text">Lock this tracker to <strong id="claimEmail"></strong> on this device?</p>
+      <div class="claim-actions">
+        <button id="claimYes" class="btn btn-primary">Yes, this is me</button>
+        <button id="claimNo" class="btn">Use a different account</button>
+      </div>
+    </div>
+
     <p id="gateMsg" class="gate-msg"></p>
   </div>
 </div>

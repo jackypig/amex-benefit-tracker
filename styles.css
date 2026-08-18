@@ -258,3 +258,17 @@ main { max-width: 1080px; margin: 0 auto; padding: 22px; display: grid; gap: 20p
   .cell { padding-left: 10px; padding-right: 10px; }
   .cell input[type="date"] { max-width: 108px; }
 }
+
+/* ---------- first-run account claim ---------- */
+.claim {
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  text-align: left;
+}
+.claim-text { margin: 0 0 12px; font-size: 13.5px; color: var(--text-dim); }
+.claim-text strong { color: var(--text); overflow-wrap: anywhere; }
+.claim-actions { display: grid; gap: 8px; }
+.claim-actions .btn { width: 100%; padding: 9px 14px; }
