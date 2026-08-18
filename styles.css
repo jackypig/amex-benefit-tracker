@@ -259,7 +259,7 @@ main { max-width: 1080px; margin: 0 auto; padding: 22px; display: grid; gap: 20p
   .cell input[type="date"] { max-width: 108px; }
 }
 
-/* ---------- first-run account claim ---------- */
+/* ---------- first-run setup panel ---------- */
 .claim {
   margin-top: 16px;
   padding: 14px;
@@ -272,3 +272,24 @@ main { max-width: 1080px; margin: 0 auto; padding: 22px; display: grid; gap: 20p
 .claim-text strong { color: var(--text); overflow-wrap: anywhere; }
 .claim-actions { display: grid; gap: 8px; }
 .claim-actions .btn { width: 100%; padding: 9px 14px; }
+
+.claim-text { overflow-wrap: anywhere; }
+.claim-text code {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 4px;
+}
+.uid {
+  display: block;
+  margin: 0 0 12px;
+  padding: 9px 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 12.5px;
+  overflow-wrap: anywhere;
+  color: var(--text);
+}

@@ -16,11 +16,14 @@
     <p class="gate-sub">Track your monthly dining, Uber Cash, Dunkin' and Resy credits before they expire.</p>
     <button id="signInBtn" class="btn btn-primary">Sign in with Google</button>
 
-    <div id="claim" class="claim" hidden>
-      <p class="claim-text">Lock this tracker to <strong id="claimEmail"></strong> on this device?</p>
+    <div id="setup" class="claim" hidden>
+      <p class="claim-text">Setup — signed in as <strong id="setupEmail"></strong>.
+      Paste this UID into <code>ALLOWED_UID</code> in <code>firebase-config.js</code>
+      and into <code>firestore.rules</code>, then reload.</p>
+      <code id="setupUid" class="uid"></code>
       <div class="claim-actions">
-        <button id="claimYes" class="btn btn-primary">Yes, this is me</button>
-        <button id="claimNo" class="btn">Use a different account</button>
+        <button id="copyUid" class="btn btn-primary">Copy UID</button>
+        <button id="setupOut" class="btn">Sign out</button>
       </div>
     </div>
 

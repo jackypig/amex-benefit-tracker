@@ -1,4 +1,4 @@
-import { firebaseConfig } from "./firebase-config.js";
+import { firebaseConfig, ALLOWED_UID } from "./firebase-config.js";
 
 /* ==========================================================================
    Benefit catalogue — American Express Gold Card (personal), 2026
@@ -365,29 +365,30 @@ function el(tag, props = {}) {
 }
 
 /* ==========================================================================
-   Device owner — cosmetic first-run claim.
-   The authoritative check is the UID condition in firestore.rules; this only
-   avoids showing a stranger an empty tracker on a shared browser.
+   Access control
+
+   ALLOWED_UID below only decides what the UI does. It is not the security
+   boundary and cannot be -- this file ships to every visitor. The real check
+   is the identical UID in firestore.rules, enforced by Google on every read
+   and write, so a stranger who edits this constant still gets nothing back.
    ========================================================================== */
 
-const OWNER_KEY = "amex-benefits:owner";
-const getOwner = () => localStorage.getItem(OWNER_KEY);
-const setOwner = (email) => localStorage.setItem(OWNER_KEY, email);
-
-/** Resolves true if this account may proceed on this device. */
-function confirmOwner(email) {
-  return new Promise((resolve) => {
-    $("claimEmail").textContent = email;
-    $("claim").hidden = false;
-    $("signInBtn").hidden = true;
-    const done = (ok) => {
-      $("claim").hidden = true;
-      $("signInBtn").hidden = false;
-      resolve(ok);
-    };
-    $("claimYes").onclick = () => { setOwner(email); done(true); };
-    $("claimNo").onclick = () => done(false);
-  });
+/** Setup mode: no UID configured yet, so show the user theirs. */
+function showSetup(user, signOut) {
+  $("setupEmail").textContent = user.email || "this account";
+  $("setupUid").textContent = user.uid;
+  $("setup").hidden = false;
+  $("signInBtn").hidden = true;
+  $("copyUid").onclick = async () => {
+    try {
+      await navigator.clipboard.writeText(user.uid);
+      $("copyUid").textContent = "Copied";
+      setTimeout(() => ($("copyUid").textContent = "Copy UID"), 1500);
+    } catch {
+      getSelection().selectAllChildren($("setupUid"));
+    }
+  };
+  $("setupOut").onclick = signOut;
 }
 
 /* ==========================================================================
@@ -450,18 +451,19 @@ if (!HAS_FIREBASE) {
       if (store.unsub) { store.unsub(); store.unsub = null; }
       store.uid = null;
       $("app").hidden = true;
+      $("setup").hidden = true;
+      $("signInBtn").hidden = false;
       $("gate").hidden = false;
       return;
     }
-    const owner = getOwner();
-    if (owner && user.email !== owner) {
-      await authMod.signOut(auth);
-      $("gateMsg").className = "gate-msg";
-      $("gateMsg").textContent = `This tracker belongs to ${owner}. Signed ${user.email} out.`;
+    if (!ALLOWED_UID) {
+      showSetup(user, () => authMod.signOut(auth));
       return;
     }
-    if (!owner && !(await confirmOwner(user.email))) {
+    if (user.uid !== ALLOWED_UID) {
       await authMod.signOut(auth);
+      $("gateMsg").className = "gate-msg";
+      $("gateMsg").textContent = `${user.email} is not authorised to use this tracker.`;
       return;
     }
     store.uid = user.uid;

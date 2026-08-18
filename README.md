@@ -35,13 +35,26 @@ mode and saves to `localStorage` in that browser.
 3. **Build → Firestore Database → Create database** → *Production mode*.
 4. **Project settings → General → Your apps → Web app** (`</>`), register the app,
    and copy the `firebaseConfig` values into `firebase-config.js`.
-5. Sign in once, then find your UID under **Authentication → Users**.
-6. Paste that UID into `firestore.rules` in place of `PASTE_YOUR_UID_HERE`, then
-   copy the file's contents into **Firestore Database → Rules → Publish**.
+5. Run the site and sign in once. With `ALLOWED_UID` still empty the app starts
+   in **setup mode** and shows you your Firebase Auth UID.
+6. Paste that UID into `ALLOWED_UID` in `firebase-config.js` **and** into
+   `firestore.rules` in place of `PASTE_YOUR_UID_HERE`.
+7. Copy the contents of `firestore.rules` into **Firestore Database → Rules →
+   Publish**. Nothing is enforced until you do this.
 
-No account is hardcoded in the source. The first Google account to sign in
-claims the tracker in that browser; the authoritative lock is the UID check in
-`firestore.rules`.
+## Who can access what
+
+The page itself is static and world-readable — anyone with the URL can load the
+HTML, and no amount of client-side code changes that. What is protected is the
+*data*.
+
+`ALLOWED_UID` in `firebase-config.js` only drives the UI: a stranger who signs
+in gets bounced to a "not authorised" message. Treat that as cosmetic, since it
+ships to every visitor and can be edited locally.
+
+The real boundary is the matching UID in `firestore.rules`. Google evaluates it
+on the server for every read and write, so an attacker who strips out the
+client check still receives nothing. Both values must be the same UID.
 
 The values in `firebase-config.js` are not secrets — Firebase web config is public
 by design, and it is safe to commit. Your data is protected by `firestore.rules`,
