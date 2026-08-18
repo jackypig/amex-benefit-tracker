@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Amex Gold Benefit Tracker</title>
+<link rel="stylesheet" href="./styles.css" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💳</text></svg>" />
+</head>
+<body>
+
+<div id="gate" class="gate">
+  <div class="gate-card">
+    <div class="gate-logo">💳</div>
+    <h1>Amex Gold Benefit Tracker</h1>
+    <p class="gate-sub">Track your monthly dining, Uber Cash, Dunkin' and Resy credits before they expire.</p>
+    <button id="signInBtn" class="btn btn-primary">Sign in with Google</button>
+    <p id="gateMsg" class="gate-msg"></p>
+  </div>
+</div>
+
+<div id="app" hidden>
+  <header class="topbar">
+    <div class="topbar-left">
+      <span class="brand">💳 Amex Gold Benefits</span>
+      <div class="year-nav">
+        <button id="prevYear" class="btn btn-ghost" aria-label="Previous year">‹</button>
+        <span id="yearLabel" class="year-label">2026</span>
+        <button id="nextYear" class="btn btn-ghost" aria-label="Next year">›</button>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <span id="whoami" class="whoami"></span>
+      <span id="syncState" class="sync" title="Storage mode"></span>
+      <button id="signOutBtn" class="btn btn-ghost">Sign out</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="summary" id="summary"></section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Monthly credits</h2>
+        <p class="panel-sub">Each resets on the 1st. Unused value does <strong>not</strong> roll over.</p>
+      </div>
+      <div class="table-wrap">
+        <table class="grid" id="monthlyTable"></table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Resy credit</h2>
+        <p class="panel-sub">$50 per calendar half ($100/year) at U.S. Resy restaurants.</p>
+      </div>
+      <div class="half-cards" id="resyCards"></div>
+    </section>
+
+    <section class="panel notes">
+      <div class="panel-head"><h2>What counts</h2></div>
+      <ul id="benefitNotes" class="note-list"></ul>
+      <p class="fineprint">All four credits require one-time enrollment in the Benefits section of your Amex account before spend counts. Amex does not warn you before a credit lapses.</p>
+    </section>
+  </main>
+</div>
+
+<script type="module" src="./app.js"></script>
+</body>
+</html>
