@@ -2,11 +2,13 @@ rules_version = '2';
 
 // Amex Benefit Tracker — single-user lockdown.
 //
-// Replace PASTE_YOUR_UID_HERE with your own Firebase Auth UID, then deploy:
-//   Firebase console > Firestore Database > Rules > paste > Publish
+// This file is the actual access control for the tracker. Until it is
+// published in the Firebase console it does nothing -- the copy in the repo is
+// inert. Google enforces the deployed copy on every read and write.
 //
-// Find your UID under Authentication > Users after signing in once, or run
-// `console.log(firebase.auth().currentUser.uid)` in the browser console.
+// The UID below must stay identical to ALLOWED_UID in firebase-config.js.
+// Deploy this file via:
+//   Firebase console > Firestore Database > Rules > paste > Publish
 
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -14,7 +16,7 @@ service cloud.firestore {
     match /users/{userId}/{document=**} {
       allow read, write: if request.auth != null
                          && request.auth.uid == userId
-                         && request.auth.uid == 'PASTE_YOUR_UID_HERE';
+                         && request.auth.uid == '8npYmYebGoVvkogINsvq5b9YM0z2';
     }
 
     match /{document=**} {

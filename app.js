@@ -1,4 +1,4 @@
-import { firebaseConfig, ALLOWED_EMAIL } from "./firebase-config.js";
+import { firebaseConfig, ALLOWED_UID } from "./firebase-config.js";
 
 /* ==========================================================================
    Benefit catalogue — American Express Gold Card (personal), 2026
@@ -118,7 +118,10 @@ async function loadYear(year) {
     },
     (err) => {
       console.error("Firestore read failed:", err);
-      alert(`Could not read your data from Firestore:\n\n${err.message}\n\nCheck that firestore.rules is deployed and that your UID matches.`);
+      const hint = err.code === "permission-denied"
+        ? "Firestore rejected this account. Publish firestore.rules with your own UID in the Firebase console."
+        : err.message;
+      alert(`Could not read your data from Firestore:\n\n${hint}`);
     }
   );
 }
@@ -362,6 +365,33 @@ function el(tag, props = {}) {
 }
 
 /* ==========================================================================
+   Access control
+
+   ALLOWED_UID below only decides what the UI does. It is not the security
+   boundary and cannot be -- this file ships to every visitor. The real check
+   is the identical UID in firestore.rules, enforced by Google on every read
+   and write, so a stranger who edits this constant still gets nothing back.
+   ========================================================================== */
+
+/** Setup mode: no UID configured yet, so show the user theirs. */
+function showSetup(user, signOut) {
+  $("setupEmail").textContent = user.email || "this account";
+  $("setupUid").textContent = user.uid;
+  $("setup").hidden = false;
+  $("signInBtn").hidden = true;
+  $("copyUid").onclick = async () => {
+    try {
+      await navigator.clipboard.writeText(user.uid);
+      $("copyUid").textContent = "Copied";
+      setTimeout(() => ($("copyUid").textContent = "Copy UID"), 1500);
+    } catch {
+      getSelection().selectAllChildren($("setupUid"));
+    }
+  };
+  $("setupOut").onclick = signOut;
+}
+
+/* ==========================================================================
    Boot
    ========================================================================== */
 
@@ -421,13 +451,19 @@ if (!HAS_FIREBASE) {
       if (store.unsub) { store.unsub(); store.unsub = null; }
       store.uid = null;
       $("app").hidden = true;
+      $("setup").hidden = true;
+      $("signInBtn").hidden = false;
       $("gate").hidden = false;
       return;
     }
-    if (ALLOWED_EMAIL && user.email !== ALLOWED_EMAIL) {
+    if (!ALLOWED_UID) {
+      showSetup(user, () => authMod.signOut(auth));
+      return;
+    }
+    if (user.uid !== ALLOWED_UID) {
       await authMod.signOut(auth);
       $("gateMsg").className = "gate-msg";
-      $("gateMsg").textContent = `${user.email} is not allowed to use this tracker.`;
+      $("gateMsg").textContent = `${user.email} is not authorised to use this tracker.`;
       return;
     }
     store.uid = user.uid;

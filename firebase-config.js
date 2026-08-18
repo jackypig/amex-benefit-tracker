@@ -14,13 +14,20 @@
 // ---------------------------------------------------------------------------
 
 export const firebaseConfig = {
-  apiKey: "",
-  authDomain: "",
-  projectId: "",
-  appId: "",
+  apiKey: "AIzaSyArUYk6FGiANpzT0nhCYDd8qO4w_n2Mxos",
+  authDomain: "amex-benefit-tracker-a8c41.firebaseapp.com",
+  projectId: "amex-benefit-tracker-a8c41",
+  storageBucket: "amex-benefit-tracker-a8c41.firebasestorage.app",
+  messagingSenderId: "332419102314",
+  appId: "1:332419102314:web:228fb31540ca32037c7c13"
 };
 
-// Only this Google account may use the app. Fill in your own email address.
-// Leave empty to allow any Google account (each account still gets its own
-// private data). The real enforcement lives in firestore.rules.
-export const ALLOWED_EMAIL = "";
+// The only account allowed to use this tracker, as a Firebase Auth UID.
+//
+// A UID is an opaque random string -- it does not reveal your email address,
+// so it is safe to commit to a public repo. Leave it empty and the app runs in
+// setup mode: sign in once and it will show you your UID to paste in here.
+//
+// This constant drives the UI. The binding check is the identical UID in
+// firestore.rules, which Google enforces server-side.
+export const ALLOWED_UID = "8npYmYebGoVvkogINsvq5b9YM0z2";
