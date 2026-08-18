@@ -30,4 +30,4 @@ export const firebaseConfig = {
 //
 // This constant drives the UI. The binding check is the identical UID in
 // firestore.rules, which Google enforces server-side.
-export const ALLOWED_UID = "";
+export const ALLOWED_UID = "8npYmYebGoVvkogINsvq5b9YM0z2";
