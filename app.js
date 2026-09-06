@@ -96,6 +96,7 @@ function localKey(year) {
 
 async function loadYear(year) {
   state.year = year;
+  unlocked.clear();
   if (store.unsub) { store.unsub(); store.unsub = null; }
 
   if (store.mode === "local") {
@@ -163,6 +164,93 @@ const usageFor = (periodKey, benefitId) => state.periods?.[periodKey]?.[benefitI
 
 const $ = (id) => document.getElementById(id);
 
+/* ==========================================================================
+   Locking — closed periods are read-only until deliberately unlocked
+
+   A past month or half is done: whatever you captured is history, and a stray
+   click should not rewrite it. Those rows render disabled until the user says
+   yes to the confirm dialog, and the unlock is in-memory only — it never
+   persists, and re-locks on save, year change or reload.
+   ========================================================================== */
+
+const unlocked = new Set();
+
+const isLocked = (phase, periodKey) => phase === "past" && !unlocked.has(periodKey);
+
+/**
+ * Resolves true only on an explicit Yes. Escape and No both mean no, and the
+ * backdrop is inert, so the answer is always deliberate.
+ *
+ * Everything here is driven off explicit button clicks and keydown rather than
+ * a `method="dialog"` form plus the `close`/`cancel` events: some engines close
+ * the dialog and set `returnValue` without ever firing those, which would leave
+ * this promise pending forever and wedge the dialog open.
+ */
+function askConfirm(subtext) {
+  const dlg = $("confirmDialog");
+  const yes = $("confirmYes");
+  const no = $("confirmNo");
+  if (!dlg || !yes || !no || typeof dlg.showModal !== "function") {
+    return Promise.resolve(window.confirm("Are you going to make a change?"));
+  }
+
+  $("confirmSub").textContent = subtext;
+  if (dlg.open) dlg.close();
+  dlg.showModal();
+
+  return new Promise((resolve) => {
+    const answer = (value) => (event) => {
+      if (event) event.preventDefault();
+      yes.removeEventListener("click", onYes);
+      no.removeEventListener("click", onNo);
+      dlg.removeEventListener("cancel", onNo);
+      dlg.removeEventListener("keydown", onKey);
+      if (dlg.open) dlg.close();
+      resolve(value);
+    };
+    const onYes = answer(true);
+    const onNo = answer(false);
+    const onKey = (event) => { if (event.key === "Escape") onNo(event); };
+
+    yes.addEventListener("click", onYes);
+    no.addEventListener("click", onNo);
+    dlg.addEventListener("cancel", onNo);
+    dlg.addEventListener("keydown", onKey);
+  });
+}
+
+/**
+ * Lock toggle for one closed period. Returns null for current/future periods,
+ * which are editable by definition and need no control.
+ */
+function lockToggle(periodKey, phase, periodLabel) {
+  if (phase !== "past") return null;
+  const open = unlocked.has(periodKey);
+
+  const btn = el("button", {
+    class: "lockbtn" + (open ? " open" : ""),
+    textContent: open ? "🔓 Save" : "🔒 Unlock",
+    title: open
+      ? `Lock ${periodLabel} again`
+      : `${periodLabel} is closed — unlock to change it`,
+  });
+  btn.setAttribute("aria-label", open ? `Save and lock ${periodLabel}` : `Unlock ${periodLabel}`);
+
+  btn.addEventListener("click", async () => {
+    if (unlocked.has(periodKey)) {
+      unlocked.delete(periodKey);
+      renderAll();
+      return;
+    }
+    if (await askConfirm(`${periodLabel} has already closed. Unlocking lets you correct what you recorded.`)) {
+      unlocked.add(periodKey);
+      renderAll();
+    }
+  });
+
+  return btn;
+}
+
 function renderMonthly() {
   const table = $("monthlyTable");
   const y = state.year;
@@ -177,6 +265,7 @@ function renderMonthly() {
     hr.appendChild(th);
   }
   hr.appendChild(el("th", { textContent: "Captured" }));
+  hr.appendChild(el("th", { class: "lock-col", textContent: "Edit" }));
   head.appendChild(hr);
 
   const body = document.createElement("tbody");
@@ -185,25 +274,35 @@ function renderMonthly() {
     const phase = phaseOf(bounds);
     const pk = monthKey(y, m);
 
-    const tr = el("tr", { class: phase === "current" ? "is-current" : phase === "future" ? "is-future" : "" });
+    const locked = isLocked(phase, pk);
+    const phaseClass = phase === "current" ? "is-current" : phase === "future" ? "is-future" : "";
+    const lockClass = phase !== "past" ? "" : locked ? "is-locked" : "is-unlocked";
+
+    const tr = el("tr", { class: [phaseClass, lockClass].filter(Boolean).join(" ") });
     tr.appendChild(el("td", { class: "month-cell", textContent: MONTH_NAMES[m] }));
 
     let captured = 0;
     for (const b of MONTHLY) {
       const u = usageFor(pk, b.id);
       if (u) captured += b.amount;
-      tr.appendChild(benefitCell(b, pk, bounds, phase));
+      tr.appendChild(benefitCell(b, pk, bounds, phase, locked));
     }
 
     const possible = MONTHLY.reduce((s, b) => s + b.amount, 0);
     tr.appendChild(el("td", { class: "total-cell", textContent: `$${captured} / $${possible}` }));
+
+    const lockTd = el("td", { class: "lock-cell" });
+    const toggle = lockToggle(pk, phase, `${MONTH_NAMES[m]} ${y}`);
+    if (toggle) lockTd.appendChild(toggle);
+    tr.appendChild(lockTd);
+
     body.appendChild(tr);
   }
 
   table.replaceChildren(head, body);
 }
 
-function benefitCell(benefit, periodKey, bounds, phase) {
+function benefitCell(benefit, periodKey, bounds, phase, locked = false) {
   const td = el("td");
   const wrap = el("div", { class: "cell" });
   const u = usageFor(periodKey, benefit.id);
@@ -211,11 +310,13 @@ function benefitCell(benefit, periodKey, bounds, phase) {
   const mark = el("button", {
     class: "mark" + (u ? " on" : ""),
     textContent: "✓",
-    title: u ? `Used ${u.date} — click to clear` : `Mark ${benefit.label} used`,
+    title: locked
+      ? `${benefit.label} is locked — unlock this month to change it`
+      : u ? `Used ${u.date} — click to clear` : `Mark ${benefit.label} used`,
   });
   mark.setAttribute("aria-pressed", u ? "true" : "false");
   mark.setAttribute("aria-label", `${benefit.label}, ${MONTH_SHORT[bounds.start.getMonth()]} ${bounds.start.getFullYear()}`);
-  if (phase === "future") mark.disabled = true;
+  if (phase === "future" || locked) mark.disabled = true;
   mark.addEventListener("click", () => {
     writeUsage(periodKey, benefit.id, u ? null : { date: defaultDate(bounds) });
   });
@@ -225,7 +326,8 @@ function benefitCell(benefit, periodKey, bounds, phase) {
     const date = el("input", { type: "date", value: u.date });
     date.min = iso(bounds.start);
     date.max = iso(bounds.end);
-    date.title = "Date you used this credit";
+    date.title = locked ? "Locked — unlock this month to change the date" : "Date you used this credit";
+    date.disabled = locked;
     date.addEventListener("change", () => {
       if (date.value) writeUsage(periodKey, benefit.id, { date: date.value });
     });
@@ -248,10 +350,16 @@ function renderResy() {
     const phase = phaseOf(bounds);
     const pk = halfKey(y, h);
     const u = usageFor(pk, RESY.id);
+    const locked = isLocked(phase, pk);
 
     const cls = u ? "is-done" : phase === "past" ? "is-lost" : phase === "current" ? "is-current" : "";
-    const card = el("div", { class: `half ${cls}` });
-    card.appendChild(el("div", { class: "half-title", textContent: h === 1 ? "First half" : "Second half" }));
+    const card = el("div", { class: `half ${cls}${locked ? " is-locked" : ""}` });
+
+    const titleRow = el("div", { class: "half-head" });
+    titleRow.appendChild(el("div", { class: "half-title", textContent: h === 1 ? "First half" : "Second half" }));
+    const toggle = lockToggle(pk, phase, `${h === 1 ? "Jan–Jun" : "Jul–Dec"} ${y}`);
+    if (toggle) titleRow.appendChild(toggle);
+    card.appendChild(titleRow);
     card.appendChild(el("div", {
       class: "half-range",
       textContent: h === 1 ? `Jan 1 – Jun 30, ${y}` : `Jul 1 – Dec 31, ${y}`,
@@ -261,11 +369,13 @@ function renderResy() {
     const mark = el("button", {
       class: "mark" + (u ? " on" : ""),
       textContent: "✓",
-      title: u ? `Used ${u.date} — click to clear` : "Mark Resy credit used",
+      title: locked
+        ? "Locked — unlock this half to change it"
+        : u ? `Used ${u.date} — click to clear` : "Mark Resy credit used",
     });
     mark.setAttribute("aria-pressed", u ? "true" : "false");
     mark.setAttribute("aria-label", `Resy credit, ${h === 1 ? "first" : "second"} half of ${y}`);
-    if (phase === "future") mark.disabled = true;
+    if (phase === "future" || locked) mark.disabled = true;
     mark.addEventListener("click", () => {
       writeUsage(pk, RESY.id, u ? null : { date: defaultDate(bounds) });
     });
@@ -275,6 +385,8 @@ function renderResy() {
       const date = el("input", { type: "date", value: u.date });
       date.min = iso(bounds.start);
       date.max = iso(bounds.end);
+      date.disabled = locked;
+      date.title = locked ? "Locked — unlock this half to change the date" : "Date you used this credit";
       date.addEventListener("change", () => {
         if (date.value) writeUsage(pk, RESY.id, { date: date.value });
       });

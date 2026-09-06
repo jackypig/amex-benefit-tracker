@@ -19,6 +19,17 @@ Firebase Auth (Google sign-in) + Firestore for private, synced storage.
 **$424/year total.** All four require one-time enrollment in the Benefits section
 of your Amex account before spend counts, and none of them roll over.
 
+## Locked history
+
+A period that has closed is read-only: its marks and dates are disabled so a
+stray click cannot rewrite what you already recorded. To correct one, press
+**🔒 Unlock** on that row (or on the Resy half card) and answer *Yes* to
+"Are you going to make a change?" — the row then edits exactly like the current
+month, and **🔓 Save** locks it again.
+
+Unlocking is in-memory only. It is never written to Firestore or
+`localStorage`, and it re-locks on save, on switching year, and on reload.
+
 ## Run it locally
 
 ```bash
